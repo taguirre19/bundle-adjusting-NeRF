@@ -28,6 +28,9 @@ data:                                                       # data options
     val_on_test: false                                      # validate on test set during training
     train_sub:                                              # consider a subset of N training samples
     val_sub:                                                # consider a subset of N validation samples
+    uniform_blur: false
+    blur_strenght: 5
+    random_blur: false
 
 loss_weight: {}                                             # loss weights (in log scale)
 

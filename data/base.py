@@ -27,6 +27,9 @@ class Dataset(torch.utils.data.Dataset):
         else: self.crop_H,self.crop_W = self.raw_H,self.raw_W
         if not opt.H or not opt.W:
             opt.H,opt.W = self.crop_H,self.crop_W
+        self.uniform_blur = opt.data.uniform_blur
+        self.blur_strenght = opt.data.blur_strenght
+        self.random_blur = opt.data.random_blur
 
     def setup_loader(self,opt,shuffle=False,drop_last=False):
         loader = torch.utils.data.DataLoader(self,

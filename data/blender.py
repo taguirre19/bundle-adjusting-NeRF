@@ -1,3 +1,4 @@
+import cv2 as cv
 import numpy as np
 import os,sys,time
 import torch
@@ -9,6 +10,7 @@ import imageio
 from easydict import EasyDict as edict
 import json
 import pickle
+
 
 from . import base
 import camera
@@ -49,6 +51,10 @@ class Dataset(base.Dataset):
         aug = self.generate_augmentation(opt) if self.augment else None
         image = self.images[idx] if opt.data.preload else self.get_image(opt,idx)
         image = self.preprocess_image(opt,image,aug=aug)
+        if self.uniform_blur:
+            image = self.add_blur(image, self.blur_strenght)
+        elif self.random_blur:
+            image = self.add_blur(image, self.random_blur_strenght())
         intr,pose = self.cameras[idx] if opt.data.preload else self.get_camera(opt,idx)
         intr,pose = self.preprocess_camera(opt,intr,pose,aug=aug)
         sample.update(
@@ -69,6 +75,22 @@ class Dataset(base.Dataset):
         if opt.data.bgcolor is not None:
             rgb = rgb*mask+opt.data.bgcolor*(1-mask)
         return rgb
+
+    @staticmethod
+    def add_blur(image, blur_strength):
+        # Determine the kernel size based on blur strength
+        kernel_size = blur_strength * 2 + 1
+        # Generate a motion blur kernel based on the right direction
+        kernel_motion_blur = np.zeros((kernel_size, kernel_size))
+        kernel_motion_blur[int((kernel_size-1)/2), :] = np.ones(kernel_size)
+        kernel_motion_blur = kernel_motion_blur / kernel_size
+        # Apply the motion blur kernel to the image
+        blurred_image = cv.filter2D(image.cpu().numpy(), -1, kernel_motion_blur)
+        return torch.tensor(blurred_image)
+
+    def random_blur_strenght(self, std_int = 2):
+        noise = np.random.randint(-std_int, std_int)
+        return self.blur_strenght + noise
 
     def get_camera(self,opt,idx):
         intr = torch.tensor([[self.focal,0,self.raw_W/2],
